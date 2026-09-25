@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/luanorlando/desafio-go-labs-cep-cloudrun.git/internal/entity"
+	"github.com/luanorlando/labs-cep-weather-obsevability.git/internal/entity"
 )
 
 type ViaCEPRepository struct {
