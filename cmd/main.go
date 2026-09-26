@@ -31,7 +31,7 @@ func main() {
 	usecase := usecase.NewFetchWeatherUsecase(cepRepo, weatherRepo)
 	cepHandler := handler.NewHandler(usecase)
 
-	http.Handle("GET /weather/{cep}", cepHandler)
+	http.Handle("POST /weather", cepHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {

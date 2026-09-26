@@ -20,9 +20,14 @@ func NewHandler(u *usecase.FetchWeatherUsecase) *WeatherHandler {
 }
 
 func (h *WeatherHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	cep := r.PathValue("cep")
+	var dto usecase.CEPDto
+	err := json.NewDecoder(r.Body).Decode(&dto)
+	if err != nil {
+		http.Error(w, entity.ErrCEPInvalid.Error(), http.StatusUnprocessableEntity)
+		return
+	}
 
-	result, err := h.usecase.Execute(cep)
+	result, err := h.usecase.Execute(dto.Cep)
 
 	if err != nil {
 		if errors.Is(err, entity.ErrCEPInvalid) {
@@ -31,7 +36,7 @@ func (h *WeatherHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if errors.Is(err, entity.ErrCEPNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound) // <-- CORRIGIDO PARA 404
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 

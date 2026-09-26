@@ -1,3 +1,7 @@
-# GET http://localhost:8080/weather/01001-000 HTTP/1.1
-# Host: localhost:8080
-# Content-Type: application/json
+POST http://localhost:8080/weather HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+
+{
+    "cep":"03986000"
+}

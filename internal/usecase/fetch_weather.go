@@ -2,6 +2,10 @@ package usecase
 
 import "github.com/luanorlando/labs-cep-weather-obsevability.git/internal/entity"
 
+type CEPDto struct {
+	Cep string `json:"cep"`
+}
+
 type CEPRepository interface {
 	Fetch(cep string) (*entity.Cep, error)
 }
