@@ -59,8 +59,8 @@ Deve retornar a cidade e as temperaturas formatadas:
 # Erros
 
 Status	Mensagem	Quando ocorre
-- [ ] 422	invalid zipcode	CEP com formato inválido
-- [ ] 404	can not find zipcode	CEP com formato correto, mas não encontrado
+- [x] 422	invalid zipcode	CEP com formato inválido
+- [x] 404	can not find zipcode	CEP com formato correto, mas não encontrado
 
 # Requisitos de observabilidade (OTEL + Zipkin)
 
