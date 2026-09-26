@@ -6,6 +6,13 @@ type CEPDto struct {
 	Cep string `json:"cep"`
 }
 
+type WeatherOutputDto struct {
+	City       string  `json:"city"`
+	Celsius    float64 `json:"temp_C"`
+	Fahrenheit float64 `json:"temp_F"`
+	Kelvin     float64 `json:"temp_k"`
+}
+
 type CEPRepository interface {
 	Fetch(cep string) (*entity.Cep, error)
 }
@@ -26,7 +33,7 @@ func NewFetchWeatherUsecase(cr CEPRepository, wr WeatherRepository) *FetchWeathe
 	}
 }
 
-func (u FetchWeatherUsecase) Execute(cep string) (*entity.Weather, error) {
+func (u FetchWeatherUsecase) Execute(cep string) (*WeatherOutputDto, error) {
 	if !entity.ValidarCEP(cep) {
 		return nil, entity.ErrCEPInvalid
 	}
@@ -43,7 +50,8 @@ func (u FetchWeatherUsecase) Execute(cep string) (*entity.Weather, error) {
 
 	kelvin := entity.KelvinBy(wResult.Current.Celsius)
 
-	return &entity.Weather{
+	return &WeatherOutputDto{
+		City:       cResult.City,
 		Celsius:    wResult.Current.Celsius,
 		Fahrenheit: wResult.Current.Fahrenheit,
 		Kelvin:     kelvin,
