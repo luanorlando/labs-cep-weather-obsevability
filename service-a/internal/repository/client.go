@@ -2,26 +2,27 @@ package repository
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/luanorlando/labs-cep-weather-obsevability.git/internal/entity"
 )
 
-type ViaCEPRepository struct {
+type CEPServiceClient struct {
 	httpClient *http.Client
+	url        string
 }
 
-func NewViaCEPRepository(client *http.Client) *ViaCEPRepository {
-	return &ViaCEPRepository{
+func NewServiceBClient(url string, client *http.Client) *CEPServiceClient {
+	return &CEPServiceClient{
 		httpClient: client,
+		url:        url,
 	}
 }
 
-func (r ViaCEPRepository) Fetch(cep string) (*entity.Cep, error) {
-	urlAPI := fmt.Sprintf("https://viacep.com.br/ws/%s/json", cep)
+func (c CEPServiceClient) Fetch(cep string) (*entity.Cep, error) {
+	// urlAPI := fmt.Sprintf("https://viacep.com.br/ws/%s/json", cep)
 
-	resp, err := r.httpClient.Get(urlAPI)
+	resp, err := c.httpClient.Get(c.url)
 
 	if err != nil {
 		return nil, err
