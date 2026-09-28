@@ -16,7 +16,6 @@ Content-Type: application/json
 # ==========================================
 # 🔵 SERVIÇO B (Orquestrador e Clima)
 # Porta: 8082 (Para testes isolados do Serviço B)
-# Nota: Corrigida a URL duplicada.
 # ==========================================
 GET http://localhost:8082/weather?cep=29902555
 Host: localhost:8080
