@@ -36,7 +36,7 @@ func (c WeatherServiceClient) Fetch(cep string) (*WeatherOutputDto, error) {
 	resp, err := client.Get(urlAPI)
 
 	if err != nil {
-		return nil, err
+		return nil, entity.ErrCEPNotFound
 	}
 	defer resp.Body.Close()
 
