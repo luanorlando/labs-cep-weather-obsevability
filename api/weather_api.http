@@ -1,7 +1,23 @@
-POST http://localhost:8080/weather HTTP/1.1
+# ==========================================
+# 🟢 SERVIÇO A (Validador e Proxy)
+# Porta: 8080 (Onde você bate externamente)
+# ==========================================
+POST http://localhost:8080/weather/cep HTTP/1.1
 Host: localhost:8080
 Content-Type: application/json
 
 {
     "cep": "29902555"
 }
+
+
+###
+
+# ==========================================
+# 🔵 SERVIÇO B (Orquestrador e Clima)
+# Porta: 8082 (Para testes isolados do Serviço B)
+# Nota: Corrigida a URL duplicada.
+# ==========================================
+GET http://localhost:8082/weather?cep=29902555
+Host: localhost:8080
+Content-Type: application/json

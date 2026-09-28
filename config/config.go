@@ -7,8 +7,9 @@ import (
 )
 
 type Conf struct {
-	WeatherAPIKey string `mapstructure:"weather_api_key"`
-	HTTPPort      string `mapstructure:"http_port"`
+	WeatherAPIKey   string `mapstructure:"weather_api_key"`
+	HTTPPort        string `mapstructure:"http_port"`
+	HTTPPortWeather string `mapstructure:"http_port_weather"`
 }
 
 func LoadConfig(path string) (*Conf, error) {
@@ -20,6 +21,7 @@ func LoadConfig(path string) (*Conf, error) {
 	viper.AutomaticEnv()
 	_ = viper.BindEnv("weather_api_key", "WEATHER_API_KEY")
 	_ = viper.BindEnv("http_port", "HTTP_PORT")
+	_ = viper.BindEnv("http_port_weather", "HTTP_PORT_WEATHER")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Println("Aviso: Arquivo .env não encontrado. Buscando variáveis da memória...")
