@@ -60,7 +60,7 @@ http://localhost:9411/zipkin/
 </p>
 3. Será exibido o resultado, clique na setinha para baixo ou em `Expand All`
 <p align="left">
-  <img src="./images/result.png" alt="Result do Zipkin" width="700">
+  <img src="./images/otl_result.png" alt="Result do Zipkin" width="700">
 </p>
 4. Irá aparecer o nome de início do fluxo, quando iniciou, a quantidade de spans e a duração
  É possível clicar nos botões com os nomes dos servidores para adiciona-los como filtros, mas para ver o fluxo completo clique em show
