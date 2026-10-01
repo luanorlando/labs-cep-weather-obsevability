@@ -1,0 +1,21 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317 # É aqui que seus serviços Go conectam (o tp que configuramos)
+      http:
+        endpoint: 0.0.0.0:4318 # Aceita dados através do protocolo HTTP padrão, na porta 4318.
+
+processors:
+  batch: # Agrupa os traces em lote para enviar de forma mais eficiente
+
+exporters:
+  zipkin:
+    endpoint: "http://zipkin:9411/api/v2/spans" # Envia os dados para a API do Zipkin
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [zipkin] # Amarra o fluxo: entra via OTLP gRPC e sai para o Zipkin

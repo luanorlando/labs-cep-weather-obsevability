@@ -9,6 +9,8 @@ import (
 	"os"
 
 	"github.com/luanorlando/labs-cep-weather-obsevability.git/internal/entity"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 type CEPDto struct {
@@ -31,6 +33,12 @@ func NewCepHandler() *CepHandler {
 }
 
 func (h *CepHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	tracer := otel.Tracer("service-a-handler")
+	ctx, span := tracer.Start(r.Context(), "ServiceHttp")
+	defer span.End()
+
+	r = r.WithContext(ctx)
+
 	var dto CEPDto
 	err := json.NewDecoder(r.Body).Decode(&dto)
 	if err != nil {
@@ -48,11 +56,13 @@ func (h *CepHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	weatherUrl := fmt.Sprintf("%s/weather?cep=%s", h.serviceBURL, dto.Cep)
 	fmt.Printf("URL: %s", weatherUrl)
 
-	weatherReq, err := http.NewRequestWithContext(r.Context(), "GET", weatherUrl, nil)
+	weatherReq, err := http.NewRequestWithContext(ctx, "GET", weatherUrl, nil)
 	if err != nil {
 		http.Error(w, "erro ao preparar requisção", http.StatusInternalServerError)
 		return
 	}
+
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(weatherReq.Header))
 
 	client := &http.Client{}
 	resp, err := client.Do(weatherReq)
@@ -60,6 +70,7 @@ func (h *CepHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, entity.ErrWeatherFound.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {

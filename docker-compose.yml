@@ -1,9 +1,50 @@
 services:
-  web:
+  # 1. VISUALIZADOR DOS TRACES
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
+  # 2. COLETOR DO OPENTELEMETRY
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    # 🟢 Ajustamos o caminho do comando para apontar para a nova pasta interna
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      # 🟢 Mapeia a PASTA local './otel' para a PASTA interna '/etc/otelcol'
+      - ./otel:/etc/otelcol
+    ports:
+      - "4317:4317"
+    depends_on:
+      - zipkin
+
+  # 3. MICROSSERVIÇO B (Clima e Orquestração)
+  service-b:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./service-b/Dockerfile
+    container_name: service-b
     ports:
-      - "8080:8080"
-    env_file:
-      - .env
+      - "8082:8082"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - PORT=8082
+    depends_on:
+      - otel-collector
+
+  # 4. MICROSSERVIÇO A (Validador e Entrada)
+  service-a:
+    build:
+      context: .
+      dockerfile: ./service-a/Dockerfile
+    container_name: service-a
+    ports:
+      - "8080:8080" # Porta que você vai chamar no seu arquivo .http
+    environment:
+      - SERVICE_WEATHER_URL=http://service-b:8082 # Diz ao A como achar o B no Docker
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - PORT=8080
+    depends_on:
+      - service-b

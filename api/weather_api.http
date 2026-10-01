@@ -7,7 +7,7 @@ Host: localhost:8080
 Content-Type: application/json
 
 {
-    "cep": "29902555"
+    "cep": "03986000"
 }
 
 

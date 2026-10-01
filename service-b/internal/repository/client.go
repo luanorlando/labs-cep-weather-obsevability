@@ -1,12 +1,14 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/luanorlando/labs-cep-weather-obsevability.git/internal/entity"
+	"go.opentelemetry.io/otel"
 )
 
 type WeatherOutputDto struct {
@@ -26,40 +28,57 @@ func NewWeatherServiceClient(apiKey string) *WeatherServiceClient {
 	}
 }
 
-func (c WeatherServiceClient) Fetch(cep string) (*WeatherOutputDto, error) {
+func (c WeatherServiceClient) Fetch(ctx context.Context, cep string) (*WeatherOutputDto, error) {
 	if !entity.ValidarCEP(cep) {
 		return nil, entity.ErrCEPInvalid
 	}
 
+	tracer := otel.Tracer("service-b-repository")
+	cepCtx, spam := tracer.Start(ctx, "FetchExternalCEPAPI")
+	defer spam.End()
+
 	client := http.Client{}
 	urlAPI := fmt.Sprintf("https://viacep.com.br/ws/%s/json", cep)
-	resp, err := client.Get(urlAPI)
+	weatherReq, err := http.NewRequestWithContext(cepCtx, "GET", urlAPI, nil)
+	if err != nil {
+		spam.RecordError(err)
+		return nil, entity.ErrCEPNotFound
+	}
+
+	resp, err := client.Do(weatherReq)
 
 	if err != nil {
+		spam.RecordError(err)
 		return nil, entity.ErrCEPNotFound
 	}
 	defer resp.Body.Close()
 
 	var info entity.Cep
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		spam.RecordError(err)
 		return nil, err
 	}
 
 	if info.Erro == "true" {
+		spam.RecordError(entity.ErrCEPNotFound)
 		return nil, entity.ErrCEPNotFound
 	}
 
-	return c.fetchBy(info.City, &client)
+	return c.fetchBy(cepCtx, info.City, &client)
 }
 
-func (c WeatherServiceClient) fetchBy(city string, client *http.Client) (*WeatherOutputDto, error) {
+func (c WeatherServiceClient) fetchBy(ctx context.Context, city string, client *http.Client) (*WeatherOutputDto, error) {
 	escapedCity := url.QueryEscape(city)
 	apiUrl := fmt.Sprintf("https://api.weatherapi.com/v1/current.json?q=%s&lang=pt&key=%s", escapedCity, c.apiKey)
 
-	fmt.Printf("URL API: %s", apiUrl)
-	resp, err := client.Get(apiUrl)
+	tracer := otel.Tracer("service-b-repository")
+	weatherCtx, spam := tracer.Start(ctx, "FetchExternalWeatherAPI")
+	weatherReq, err := http.NewRequestWithContext(weatherCtx, "GET", apiUrl, nil)
+
+	resp, err := client.Do(weatherReq)
+
 	if err != nil {
-		fmt.Printf("erro: %s", err.Error())
+		spam.RecordError(err)
 		return nil, entity.ErrWeatherFound
 	}
 	defer resp.Body.Close()
@@ -67,7 +86,8 @@ func (c WeatherServiceClient) fetchBy(city string, client *http.Client) (*Weathe
 	var weather entity.WeatherFromCity
 
 	if err := json.NewDecoder(resp.Body).Decode(&weather); err != nil {
-		fmt.Printf("Erro decode: %s", err.Error())
+		decodeErr := fmt.Errorf("Erro decode: %s", err.Error())
+		spam.RecordError(decodeErr)
 		return nil, err
 	}
 

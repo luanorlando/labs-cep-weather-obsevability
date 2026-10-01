@@ -6,6 +6,8 @@ import (
 
 	"github.com/luanorlando/labs-cep-weather-obsevability.git/internal/entity"
 	"github.com/luanorlando/labs-cep-weather-obsevability.git/service-b/internal/usecase"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 type WeatherHandler struct {
@@ -19,13 +21,23 @@ func NewHandler(u *usecase.FetchWeather) WeatherHandler {
 }
 
 func (h WeatherHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := otel.GetTextMapPropagator().Extract(r.Context(), propagation.HeaderCarrier(r.Header))
+
+	tracer := otel.Tracer("service-b-handler")
+	ctx, span := tracer.Start(ctx, "ExecuteWeatherOrchestration")
+	defer span.End()
+
 	cepParam := r.URL.Query().Get("cep")
+
 	if cepParam == "" {
 		http.Error(w, entity.ErrCEPInvalid.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	result, err := h.usecase.Execute(cepParam)
+	climaCtx, climaSpan := tracer.Start(ctx, "FetchWeatherExternalAPI")
+	result, err := h.usecase.Execute(climaCtx, cepParam)
+	climaSpan.End()
+
 	if err != nil {
 		http.Error(w, entity.ErrCEPInvalid.Error(), http.StatusUnprocessableEntity)
 		return

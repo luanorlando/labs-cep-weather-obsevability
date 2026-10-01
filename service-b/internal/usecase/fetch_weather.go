@@ -1,9 +1,13 @@
 package usecase
 
-import "github.com/luanorlando/labs-cep-weather-obsevability.git/service-b/internal/repository"
+import (
+	"context"
+
+	"github.com/luanorlando/labs-cep-weather-obsevability.git/service-b/internal/repository"
+)
 
 type WeatherServiceClient interface {
-	Fetch(cep string) (*repository.WeatherOutputDto, error)
+	Fetch(ctx context.Context, cep string) (*repository.WeatherOutputDto, error)
 }
 
 type FetchWeather struct {
@@ -16,8 +20,8 @@ func NewFetchWeatherUsecase(c WeatherServiceClient) *FetchWeather {
 	}
 }
 
-func (u FetchWeather) Execute(cep string) (*repository.WeatherOutputDto, error) {
-	result, err := u.client.Fetch(cep)
+func (u FetchWeather) Execute(ctx context.Context, cep string) (*repository.WeatherOutputDto, error) {
+	result, err := u.client.Fetch(ctx, cep)
 	if err != nil {
 		return nil, err
 	}
