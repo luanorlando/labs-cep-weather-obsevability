@@ -17,33 +17,35 @@ O projeto é executável via Docker Compose, ele será responsável por subir o 
 |servidor A|service-a|8080:8080|service-b|
 
 ### Docker
-Para subir os containers no Docker use o comando
+Para subir os containers no Docker use o comando.
 
 ```shell
 docker-compose up -d --build
 ```
 
-Obs: É comum alguma portas estarem sendo usadas e com isso o comando acima falhe, então derrube todas as portas com o comando abaixo e em seguida rode o primeiro comando novamente.
+Obs: É comum algumas portas estarem sendo usadas e isso faz com que o comando acima falhe, então derrube todas as portas com o comando abaixo e em seguida rode o primeiro comando novamente.
 
 ```shell
 docker-compose down 
 ```
 
-Com isso todos os serviços devem estar funcionando, para verificar o status dos containers use
+Agora todos os serviços devem estar funcionando, para verificar o status dos containers use.
 
 ```shell
 docker compose ps
 ```
 
 ### API request
-Na pasta raíz do projeto tem uma pasta chamada `api` dentro dela tem um arquivo chamado `weather_api.http`com a requisição `POST` com isso será necessário apenas trocar o CEP e apertar o botão "request". Caso não tenha a extensão instalada também é possível realizar o request via terminal, usando o curl abaixo
+Na pasta raíz do projeto tem uma pasta chamada `/api` dentro dela tem um arquivo chamado `weather_api.http`com a requisição `POST`, será necessário apenas trocar o CEP e apertar o botão "request". Caso não tenha a extensão instalada também é possível realizar o request via terminal, usando o curl abaixo
 
 ```curl
 curl -X POST http://localhost:8080/weather/cep \
   -H "Content-Type: application/json" \
-  -d '{"cep": "03986000"}'
+  -d '{"cep": "29902555"}'
 
 ```
+
+> Atenção: O modelo acima é o único modelo válido, caso o cep seja no formato "29902-555" ou diferente de string, a chamada irá falhar
 
 ### Observability
 O projeto está sendo observado de ponta à ponta, assim que uma requisição for feita serão disparados os eventos de track via o collector do open telematry. Para olhar o que os registros desses eventos será o usado o zipkin.
@@ -60,8 +62,8 @@ http://localhost:9411/zipkin/
 <p align="left">
   <img src="./images/result.png" alt="Result do Zipkin" width="700">
 </p>
-Irá aparecer o nome de início do fluxo, quando iniciou, a quantidade de spans e a duração
-4. É possível clicar nos botões com os nomes dos servidores para adiciona-los como filtros, mas para ver o fluxo completo clique em show
+4. Irá aparecer o nome de início do fluxo, quando iniciou, a quantidade de spans e a duração
+ É possível clicar nos botões com os nomes dos servidores para adiciona-los como filtros, mas para ver o fluxo completo clique em show
 <p align="left">
   <img src="./images/show.png" alt="Show button" width="700">
 </p>
@@ -71,7 +73,7 @@ Irá aparecer o nome de início do fluxo, quando iniciou, a quantidade de spans 
 </p>
 
 Nessa tela é possível visualizar o tempo total da requisição no exemplo da última imagem o tempo total foi de 1.192s, no gráfico mostra o tempo de partida `0ms` e o tempo total `1.192s`. 
-Logo abaixo é possível ver o tempo o quanto demorou cada serviço centro desse tempo total, e no caso do serviço b por ter mais orquestraçÕes ele está exibindo mais detalhado.
+Logo abaixo é possível ver o quanto demorou cada serviço e o tempo total, no caso do serviço b por ter mais orquestrações ele está exibindo mais detalhado.
 Então temos o seguinte resultado
 |detalhe|tempo|
 |-----|-----|
