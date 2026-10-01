@@ -6,6 +6,98 @@ Sistema distribuído em Go com OpenTelemetry e Zipkin — Go Expert
 
 Desenvolver um sistema distribuído em Go composto por dois microsserviços (Serviço A e Serviço B) que cooperam para consultar o clima de uma cidade baseada no CEP. O diferencial deste desafio é a implementação de Observabilidade utilizando OpenTelemetry (OTEL) e Zipkin para realizar o rastreamento distribuído (Distributed Tracing) das requisições.
 
+# Setup
+
+O projeto é executável via Docker Compose, ele será responsável por subir o servidor-A, servidor-B, otel-colector e zipkin, então esse containers subirão nas seguintes configurações:
+|recurso|nome do container|número da porta|dependência|
+|-----|------|-------|-------|
+|zipkin|zipkin|9411:9411||
+|otel-collector|otel-collector|4317:4317|zipkin|
+|servidor B|service-b|8082:8082|otel-collector|
+|servidor A|service-a|8080:8080|service-b|
+
+### Docker
+Para subir os containers no Docker use o comando
+
+```shell
+docker-compose up -d --build
+```
+
+Obs: É comum alguma portas estarem sendo usadas e com isso o comando acima falhe, então derrube todas as portas com o comando abaixo e em seguida rode o primeiro comando novamente.
+
+```shell
+docker-compose down 
+```
+
+Com isso todos os serviços devem estar funcionando, para verificar o status dos containers use
+
+```shell
+docker compose ps
+```
+
+### API request
+Na pasta raíz do projeto tem uma pasta chamada `api` dentro dela tem um arquivo chamado `weather_api.http`com a requisição `POST` com isso será necessário apenas trocar o CEP e apertar o botão "request". Caso não tenha a extensão instalada também é possível realizar o request via terminal, usando o curl abaixo
+
+```curl
+curl -X POST http://localhost:8080/weather/cep \
+  -H "Content-Type: application/json" \
+  -d '{"cep": "03986000"}'
+
+```
+
+### Observability
+O projeto está sendo observado de ponta à ponta, assim que uma requisição for feita serão disparados os eventos de track via o collector do open telematry. Para olhar o que os registros desses eventos será o usado o zipkin.
+
+1. Abra a url localhost na porta especifica do zipink em seu navegador
+```text
+http://localhost:9411/zipkin/
+```
+2. Aperte o botão `RUN QUERY` (lado superior direito)
+<p align="left">
+  <img src="./images/run_query_button.png" alt="Inicio do Zipkin" width="700">
+</p>
+3. Será exibido o resultado, clique na setinha para baixo ou em `Expand All`
+<p align="left">
+  <img src="./images/result.png" alt="Result do Zipkin" width="700">
+</p>
+Irá aparecer o nome de início do fluxo, quando iniciou, a quantidade de spans e a duração
+4. É possível clicar nos botões com os nomes dos servidores para adiciona-los como filtros, mas para ver o fluxo completo clique em show
+<p align="left">
+  <img src="./images/show.png" alt="Show button" width="700">
+</p>
+5. Então a tela de detalhes sera exibida.
+<p align="left">
+  <img src="./images/graph.png" alt="Graph do Zipkin" width="700">
+</p>
+
+Nessa tela é possível visualizar o tempo total da requisição no exemplo da última imagem o tempo total foi de 1.192s, no gráfico mostra o tempo de partida `0ms` e o tempo total `1.192s`. 
+Logo abaixo é possível ver o tempo o quanto demorou cada serviço centro desse tempo total, e no caso do serviço b por ter mais orquestraçÕes ele está exibindo mais detalhado.
+Então temos o seguinte resultado
+|detalhe|tempo|
+|-----|-----|
+| metodo execute | 1.110s |
+| metodo feth(weater) | 1.106s |
+| metodo feth(cep) | 1.103s |
+
+#### 🗺️ Arquitetura do Fluxo Completo:
+
+* 📥 **Usuário:** Dispara um `POST /weather/cep` enviando o JSON com o CEP.
+* 📦 **Serviço A (Validador e Proxy):**
+  * Intercepta a requisição e inicia o Trace ID original.
+  * Valida o formato do CEP. Se for inválido, rejeita imediatamente com HTTP `422`.
+  * Se o CEP for válido, propaga o contexto de tracing via cabeçalhos HTTP (W3C) e despacha a requisição para o Serviço B.
+* ⚙️ **Serviço B (Orquestrador e Domínio):**
+  * Extrai os cabeçalhos de tracing, garantindo a continuidade do rastro no mesmo gráfico.
+  * Executa a requisição externa à API de Localização para traduzir o CEP em Cidade (**Span Manual**).
+  * Executa a requisição externa à API de Clima para obter a temperatura da cidade em tempo real (**Span Manual**).
+  * Realiza os cálculos de conversão de temperatura (Celsius, Fahrenheit e Kelvin).
+  * Devolve os dados estruturados em um DTO de saída para o Serviço A.
+* 📤 **Serviço A:** Intercepta a resposta de sucesso e devolve o JSON final purificado para o usuário.
+
+> **💡 Análise Arquitetural:** 
+> Avaliando a árvore temporal do gráfico, o processamento total do **Serviço B** consumiu **1.110s** do fluxo. Isso nos indica de forma matemática e visual que o custo computacional do **Serviço A** foi de apenas **82ms** (atividades de validação de regex, proxies de rede, injeção de cabeçalhos e serialização/deserialização de JSON).
+> 
+
 # Arquitetura do sistema
 
 O sistema é composto por:
@@ -64,13 +156,13 @@ Status	Mensagem	Quando ocorre
 
 # Requisitos de observabilidade (OTEL + Zipkin)
 
-- [ ] Você deve instrumentar ambos os serviços para garantir o rastreamento completo da requisição.
-- [ ] Tracing distribuído: Implemente o tracing de forma que seja possível visualizar no Zipkin o fluxo completo:
+- [x] Você deve instrumentar ambos os serviços para garantir o rastreamento completo da requisição.
+- [x] Tracing distribuído: Implemente o tracing de forma que seja possível visualizar no Zipkin o fluxo completo:
 Request → Serviço A → Serviço B
-- [ ] Spans específicos: Além do tracing automático das requisições web, você deve criar Spans manuais para medir o tempo de resposta de:
-- [ ] Busca de CEP (API externa de localização).
-- [ ] Busca de temperatura (API externa de clima). 
-- [ ] Infraestrutura: Utilize um OTEL Collector para receber os dados dos serviços e enviá-los ao Zipkin.
+- [x] Spans específicos: Além do tracing automático das requisições web, você deve criar Spans manuais para medir o tempo de resposta de:
+- [x] Busca de CEP (API externa de localização).
+- [x] Busca de temperatura (API externa de clima). 
+- [x] Infraestrutura: Utilize um OTEL Collector para receber os dados dos serviços e enviá-los ao Zipkin.
 
 # Dicas e fórmulas
 
@@ -85,18 +177,18 @@ Infraestrutura e entrega
 # Requisitos de Docker
 
 O projeto deve ser totalmente executável via Docker Compose. O arquivo docker-compose.yaml deve subir:
-- [ ] Serviço A
-- [ ] Serviço B
-- [ ] OTEL Collector
-- [ ] Zipkin
+- [x] Serviço A
+- [x] Serviço B
+- [x] OTEL Collector
+- [x] Zipkin
 
 # Entregável
 
-- [ ] Código fonte: Repositório contendo a implementação dos serviços A e B.
-- [ ] Docker Compose: Arquivo configurado para rodar todo o ecossistema.
+- [x] Código fonte: Repositório contendo a implementação dos serviços A e B.
+- [x] Docker Compose: Arquivo configurado para rodar todo o ecossistema.
 Documentação (README):
-- [ ] Instruções de como realizar a requisição POST no Serviço A.
-- [ ] Instruções de como acessar o Zipkin para visualizar os traços.
+- [x] Instruções de como realizar a requisição POST no Serviço A.
+- [x] Instruções de como acessar o Zipkin para visualizar os traços.
 
 **Regras de entrega**
 
