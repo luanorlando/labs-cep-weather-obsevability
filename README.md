@@ -6,6 +6,11 @@ Sistema distribuído em Go com OpenTelemetry e Zipkin — Go Expert
 
 Desenvolver um sistema distribuído em Go composto por dois microsserviços (Serviço A e Serviço B) que cooperam para consultar o clima de uma cidade baseada no CEP. O diferencial deste desafio é a implementação de Observabilidade utilizando OpenTelemetry (OTEL) e Zipkin para realizar o rastreamento distribuído (Distributed Tracing) das requisições.
 
+# Dependências
+
+Esse projeto acessa https://www.weatherapi.com/ para obter a temperatura, então será necessário cadastrar-se na plataforma para obter APIKey.
+No projeto tem um arquivo chamado .env.example, duplique esse arquivo e renome-o para `.env`, depois coloque a `apiKey` gerada pela [weather api](https://www.weatherapi.com/) na variavel `WEATHER_API_KEY`
+
 # Setup
 
 O projeto é executável via Docker Compose, ele será responsável por subir o servidor-A, servidor-B, otel-colector e zipkin, então esse containers subirão nas seguintes configurações:
