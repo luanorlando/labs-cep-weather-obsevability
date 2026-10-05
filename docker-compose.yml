@@ -20,7 +20,7 @@ services:
     depends_on:
       - zipkin
 
-  # 3. MICROSSERVIÇO B (Clima e Orquestração)
+  # 3. MICROSSERVIÇO B
   service-b:
     build:
       context: .
@@ -31,6 +31,7 @@ services:
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
       - PORT=8082
+      - WEATHER_API_KEY=${WEATHER_API_KEY}
     depends_on:
       - otel-collector
 
@@ -41,7 +42,7 @@ services:
       dockerfile: ./service-a/Dockerfile
     container_name: service-a
     ports:
-      - "8080:8080" # Porta que você vai chamar no seu arquivo .http
+      - "8080:8080"
     environment:
       - SERVICE_WEATHER_URL=http://service-b:8082 # Diz ao A como achar o B no Docker
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
