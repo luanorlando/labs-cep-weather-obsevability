@@ -34,33 +34,33 @@ func (c WeatherServiceClient) Fetch(ctx context.Context, cep string) (*WeatherOu
 	}
 
 	tracer := otel.Tracer("service-b-repository")
-	cepCtx, spam := tracer.Start(ctx, "FetchExternalCEPAPI")
-	defer spam.End()
+	cepCtx, span := tracer.Start(ctx, "FetchExternalCEPAPI")
+	defer span.End() // fechando o span ao final da execução
 
 	client := http.Client{}
 	urlAPI := fmt.Sprintf("https://viacep.com.br/ws/%s/json", cep)
 	weatherReq, err := http.NewRequestWithContext(cepCtx, "GET", urlAPI, nil)
 	if err != nil {
-		spam.RecordError(err)
+		span.RecordError(err)
 		return nil, entity.ErrCEPNotFound
 	}
 
 	resp, err := client.Do(weatherReq)
 
 	if err != nil {
-		spam.RecordError(err)
+		span.RecordError(err)
 		return nil, entity.ErrCEPNotFound
 	}
 	defer resp.Body.Close()
 
 	var info entity.Cep
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
-		spam.RecordError(err)
+		span.RecordError(err)
 		return nil, err
 	}
 
 	if info.Erro == "true" {
-		spam.RecordError(entity.ErrCEPNotFound)
+		span.RecordError(entity.ErrCEPNotFound)
 		return nil, entity.ErrCEPNotFound
 	}
 
@@ -72,13 +72,18 @@ func (c WeatherServiceClient) fetchBy(ctx context.Context, city string, client *
 	apiUrl := fmt.Sprintf("https://api.weatherapi.com/v1/current.json?q=%s&lang=pt&key=%s", escapedCity, c.apiKey)
 
 	tracer := otel.Tracer("service-b-repository")
-	weatherCtx, spam := tracer.Start(ctx, "FetchExternalWeatherAPI")
-	weatherReq, err := http.NewRequestWithContext(weatherCtx, "GET", apiUrl, nil)
+	weatherCtx, span := tracer.Start(ctx, "FetchExternalWeatherAPI")
+	defer span.End() // fechando o span ao final da execução
 
+	weatherReq, err := http.NewRequestWithContext(weatherCtx, "GET", apiUrl, nil)
+	if err != nil {
+		span.RecordError(err)
+		return nil, entity.ErrWeatherFound
+	}
 	resp, err := client.Do(weatherReq)
 
 	if err != nil {
-		spam.RecordError(err)
+		span.RecordError(err)
 		return nil, entity.ErrWeatherFound
 	}
 	defer resp.Body.Close()
@@ -87,7 +92,7 @@ func (c WeatherServiceClient) fetchBy(ctx context.Context, city string, client *
 
 	if err := json.NewDecoder(resp.Body).Decode(&weather); err != nil {
 		decodeErr := fmt.Errorf("Erro decode: %s", err.Error())
-		spam.RecordError(decodeErr)
+		span.RecordError(decodeErr)
 		return nil, err
 	}
 

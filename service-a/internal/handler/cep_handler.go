@@ -58,7 +58,7 @@ func (h *CepHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	weatherReq, err := http.NewRequestWithContext(ctx, "GET", weatherUrl, nil)
 	if err != nil {
-		http.Error(w, "erro ao preparar requisção", http.StatusInternalServerError)
+		http.Error(w, entity.ErrCEPNotFound.Error(), http.StatusNotFound)
 		return
 	}
 
@@ -67,16 +67,11 @@ func (h *CepHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	resp, err := client.Do(weatherReq)
 	if err != nil {
-		http.Error(w, entity.ErrWeatherFound.Error(), http.StatusInternalServerError)
+		http.Error(w, entity.ErrCEPNotFound.Error(), http.StatusNotFound)
 		return
 	}
 
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		http.Error(w, "Erro no serviço B", resp.StatusCode)
-		return
-	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(resp.StatusCode)
