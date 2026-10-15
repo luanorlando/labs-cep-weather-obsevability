@@ -30,7 +30,7 @@ func (h WeatherHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cepParam := r.URL.Query().Get("cep")
 
 	if cepParam == "" {
-		http.Error(w, entity.ErrCEPInvalid.Error(), http.StatusNotFound)
+		http.Error(w, entity.ErrCEPInvalid.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -39,6 +39,11 @@ func (h WeatherHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	climaSpan.End()
 
 	if err != nil {
+		if err == entity.ErrCEPInvalid {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
